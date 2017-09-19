@@ -15,14 +15,18 @@ namespace KwitParser
         static string DbConnectionString;
         static SqlConnection DbSqlConnection;
         const string INSERT_XML = "INSERT INTO TTESTXML (XMLTEXT) SELECT * FROM OPENROWSET(BULK '{0}',SINGLE_BLOB) AS XMLTEXT";
+        const string INSERT_TEXT = "INSERT INTO TTESTXML (KWITTEXT) SELECT * FROM OPENROWSET(BULK '{0}',SINGLE_BLOB) AS KWITTEXT";
         const string FILE_NAME = "D:\\Projects\\CB\\Alternative\\Example\\IZVTUB\\00001.xml";
 
 
         static void Main(string[] args)
         {
-            ConnectToDataBase();
+            //ConnectToDataBase();
             //ReadXml("D:\\Projects\\CB\\Alternative\\Example\\IZVTUB\\IZVTUB_AFN_3510123_MIFNS00_20170918_00003.xml");
-            InsertXml("D:\\Projects\\CB\\Alternative\\Example\\IZVTUB\\00001.xml");
+            //InsertXml("D:\\Projects\\CB\\Alternative\\Example\\IZVTUB\\00003.xml");
+            //InsertText("D:\\Projects\\CB\\Alternative\\Example\\IZVTUB\\test.txt");
+            SeparateXml();
+
             Console.ReadLine();
         }
 
@@ -56,6 +60,47 @@ namespace KwitParser
         }
 
         #endregion DO CONNECT
+
+        static void InsertText(string kwitFileName)
+        {
+            string ins = INSERT_TEXT.Replace("{0}", FILE_NAME);
+            Console.WriteLine(ins);
+            try
+            {
+                SqlCommand sqlcmd = new SqlCommand(ins, DbSqlConnection);
+                int number = sqlcmd.ExecuteNonQuery();
+                Console.WriteLine(number);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+
+        static void SeparateXmlByReader()
+        {
+            XmlTextReader reader = new XmlTextReader(FILE_NAME);
+        }
+
+        static void SeparateXml()
+        {
+            XmlDocument kwit = new XmlDocument();
+            kwit.Load(FILE_NAME);
+            // Get root node
+            XmlElement xRoot = kwit.DocumentElement;
+            Console.WriteLine(xRoot.Name);
+            foreach (XmlElement xNode in xRoot)
+            {
+                string nodeName = xNode.Name;
+                Console.WriteLine("{0}", nodeName);
+                // Get node attributes  and values
+                foreach (XmlAttribute attr in xNode.Attributes)
+                {
+                    Console.WriteLine("{0}-{1}",attr.Name,attr.Value);
+                }
+            }
+
+        }
 
         static void InsertXml(string kwitFileName)
         {
