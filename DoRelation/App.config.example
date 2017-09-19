@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <startup> 
+        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5.2" />
+    </startup>
+  <appSettings>
+    <add key="logFilePath" value="C:\temp\log_TestSystem.txt" />
+  </appSettings>
+  <connectionStrings>
+    <add name="CBUtils" connectionString="Data Source=localhost;Initial Catalog=FS_Monitor;Integrated Security=True; MultipleActiveResultSets=True" />
+  </connectionStrings>
+</configuration>

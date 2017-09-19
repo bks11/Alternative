@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <startup> 
+        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5.2" />
+    </startup>
+    <connectionStrings>
+        <add name="elodb" connectionString="Data Source=IP_ADDRESS;Initial Catalog=DATABASE_NAME;User ID=USER_NAME;Password=PASSWORD;MultipleActiveResultSets=true" />
+    </connectionStrings>
+</configuration>
