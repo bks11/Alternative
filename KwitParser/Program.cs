@@ -58,7 +58,13 @@ namespace KwitParser
         }
 
         #endregion DO CONNECT
-
+        /// <summary>
+        /// Генерация запроса по добавлению данных из XML
+        /// </summary>
+        /// <param name="newRecordId">Идентификатор родительской ноды в БД. Для корневой ноды значение -1</param>
+        /// <param name="docNode">XmlNode - текщая нода, для которой формируется запрос</param>
+        /// <param name="file_Id">Идентификатор обрабатываемого файла из TFILES</param>
+        /// <returns>Идентификатор добавленной ноды  из TXML_DATA</returns>
         static int InsertRootNode(int newRecordId, XmlNode docNode, int file_Id)
         {
             SqlCommand sqlcmd = new SqlCommand();
@@ -158,7 +164,10 @@ namespace KwitParser
             }
             return newRecordId;
         }
-
+        
+        /// <summary>
+        /// Загрузка XML файла
+        /// </summary>
         static void LoadXmlFile()
         {
             XmlDocument doc = new XmlDocument();
@@ -167,7 +176,13 @@ namespace KwitParser
             XmlPassing(-1, docNode);
         }
 
-
+        /// <summary>
+        /// Проход по струтуре XML файла
+        /// </summary>
+        /// <param name="recId">Идентификатор родительской ноды из таблицы TXML_DATA
+        /// При первоначальном вызове для корневой ноды значение -1
+        /// </param>
+        /// <param name="rootNode"> XmlNode - Обрабатываемая нода </param>
         static void XmlPassing(int recId, XmlNode rootNode)
         {
             int newId  = InsertRootNode(recId, rootNode, 3);
@@ -180,6 +195,16 @@ namespace KwitParser
                     rootNode = rootNode.NextSibling;
                 }
             }
+        }
+
+        static int GetFileIdByName()
+        {
+            return 0;
+        }
+
+        static bool CheckForExist(int fileId)
+        {
+            return true;
         }
     }
 }
