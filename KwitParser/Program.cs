@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Data;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,19 +13,41 @@ namespace KwitParser
 {
     class Program
     {
-        static string DbConnectionString;
-        static SqlConnection DbSqlConnection;
+        private static string DbConnectionString;
+        private static string FileMask { get; set; }     //Путь и маска файла квитовок. На пример:  c:\files.arh\2017\2017.09\2017.09.26\IZVTUB*.*
+        private static DateTime FileDate { get; set; }   //Дата а которую данный файл обрабаывается
+
+        private static string[] filesList;              //Список файлов согласно маски fileMask
+        private static Dictionary<int,string> filesId;
+        private static List<string> notInTFiles;
+        private static SqlConnection DbSqlConnection;
+
+        const string DATE_PATERN = "yyyyMMdd";
         const string INSERT_XML = "INSERT INTO TTESTXML (XMLTEXT) SELECT * FROM OPENROWSET(BULK '{0}',SINGLE_BLOB) AS XMLTEXT";
         const string INSERT_TEXT = "INSERT INTO TTESTXML (KWITTEXT) SELECT * FROM OPENROWSET(BULK '{0}',SINGLE_BLOB) AS KWITTEXT";
         const string INSERT_XML_DATA = "INSERT INTO [dbo].[TXML_DATA]([TFILE_ID],[TYPE],[NAME],[VALUE],[TXML_DATA_ID])VALUES(@fileId,@elementtype,@elementname,@elemvalue,@parentId); set @id = SCOPE_IDENTITY()";
-
+        const string SELECT_FILE_ID = "SELECT F.ID FROM TFILES F LEFT JOIN TXML_DATA X on X.TFILE_ID  = F.ID WHERE F.NAME = @filename AND F.DATE = @filedate AND X.ID IS NULL";
         const string FILE_NAME = "D:\\Projects\\CB\\Alternative\\Example\\IZVTUB\\00008.xml";
 
 
         static void Main(string[] args)
         {
+            //Получаем аргументы
+            //if (!DateTime.TryParseExact(args[0], DATE_PATERN, null, System.Globalization.DateTimeStyles.None, out DateTime fileDate))
+            //{
+            //    Console.WriteLine("Не возможно преобразовать дату");
+            //    return;
+            //}
+            //FileDate = fileDate;
+
+            //FileMask = args[1];
+
+            FileMask = "D:\\Projects\\CB\\Alternative\\Example\\IZVTUB";
+            FileDate = DateTime.Parse("26.09.2017");
+
             ConnectToDataBase();
-            LoadXmlFile();
+            FillXmlData();
+            //LoadXmlFile();
             Console.ReadLine();
         }
 
@@ -173,7 +196,7 @@ namespace KwitParser
             XmlDocument doc = new XmlDocument();
             doc.Load(FILE_NAME);
             XmlNode docNode = doc.DocumentElement;
-            XmlPassing(-1, docNode);
+            XmlPassing(-1, docNode, 31306);
         }
 
         /// <summary>
@@ -183,28 +206,89 @@ namespace KwitParser
         /// При первоначальном вызове для корневой ноды значение -1
         /// </param>
         /// <param name="rootNode"> XmlNode - Обрабатываемая нода </param>
-        static void XmlPassing(int recId, XmlNode rootNode)
+        static void XmlPassing(int recId, XmlNode rootNode, int kwitFileId)
         {
-            int newId  = InsertRootNode(recId, rootNode, 3);
+            int newId  = InsertRootNode(recId, rootNode, kwitFileId);
             if (rootNode.HasChildNodes)
             {
                 rootNode = rootNode.FirstChild;
                 while (rootNode != null)
                 {
-                    XmlPassing(newId, rootNode);
+                    XmlPassing(newId, rootNode, kwitFileId);
                     rootNode = rootNode.NextSibling;
                 }
             }
         }
+        
+        /// <summary>
+        ///Подготовка списка файлов по маске для внесения данных о результате квитовки 
+        /// </summary>
+        /// <param name="FileMask">Путь и маска файлов для обработки</param>
+        /// <returns>True -  если в список заполнен файлами; False - если список пустой</returns>
+        static bool PrepareKwitList()
+        {
+            string filePath;
+            string fileMask;
+            filePath = Path.GetFullPath(FileMask);
+            fileMask = "IZVTUB*.XML";
+            filesList = Directory.GetFiles(filePath,fileMask);
+            //Тернарная операция
+            return filesList.Length > 0 ? true : false;
+        }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         static int GetFileIdByName()
         {
+            filesId     = new Dictionary<int, string>();
+            notInTFiles = new List<string>();
+            //Подготовка списка ID  файлов из TFiles
+            foreach (string fn in filesList)
+            {
+                string fileName = Path.GetFileName(fn);
+                SqlCommand selectFileId = new SqlCommand(SELECT_FILE_ID, DbSqlConnection);
+                SqlParameter file_Name = new SqlParameter("@filename", fileName);
+                selectFileId.Parameters.Add(file_Name);
+                SqlParameter file_Date = new SqlParameter("@filedate", FileDate);
+                selectFileId.Parameters.Add(file_Date);
+                try
+                {
+                    SqlDataReader reader = selectFileId.ExecuteReader();
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            int id = (int)reader["ID"];
+                            filesId.Add(id,fn);
+                        }//end while
+                    }
+                    else
+                    {
+                        notInTFiles.Add(fn);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
             return 0;
         }
 
-        static bool CheckForExist(int fileId)
+        static void FillXmlData()
         {
-            return true;
-        }
+            PrepareKwitList();
+            GetFileIdByName();
+            foreach (int fileIdKey in filesId.Keys)
+            {
+                string kwitFileName  = filesId[fileIdKey];
+                XmlDocument doc = new XmlDocument();
+                doc.Load(kwitFileName);
+                XmlNode docNode = doc.DocumentElement;
+                XmlPassing(-1, docNode, fileIdKey);
+            }
+        }        
     }
 }
