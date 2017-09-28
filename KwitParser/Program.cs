@@ -14,11 +14,12 @@ namespace KwitParser
     class Program
     {
         private static string DbConnectionString;
-        private static string FileMask { get; set; }     //Путь и маска файла квитовок. На пример:  c:\files.arh\2017\2017.09\2017.09.26\IZVTUB*.*
+        private static string KwitFilePath { get; set; } //Путь к файлам квитовок. На пример:  c:\files.arh\2017\2017.09\2017.09.26\
         private static DateTime FileDate { get; set; }   //Дата а которую данный файл обрабаывается
 
-        private static string[] filesList;              //Список файлов согласно маски fileMask
+        private static List<string> filesList;              //Список файлов согласно списка масок fileMasks
         private static Dictionary<int,string> filesId;
+        private static List<string> fileMasks;              //Список масок файлов, которые хранятся в конфигурационном файле
         private static List<string> notInTFiles;
         private static SqlConnection DbSqlConnection;
 
@@ -32,40 +33,83 @@ namespace KwitParser
 
         static void Main(string[] args)
         {
+            bool hasArgs = (args.Length == 2);
+            if (!hasArgs)
+            {
+                Console.WriteLine("Не достаточно параметров для запуска приложения");
+                Console.ReadLine();
+                return;
+            }
             //Получаем аргументы
-            //if (!DateTime.TryParseExact(args[0], DATE_PATERN, null, System.Globalization.DateTimeStyles.None, out DateTime fileDate))
-            //{
-            //    Console.WriteLine("Не возможно преобразовать дату");
-            //    return;
-            //}
-            //FileDate = fileDate;
+            if (!DateTime.TryParseExact(args[0], DATE_PATERN, null, System.Globalization.DateTimeStyles.None, out DateTime fileDate))
+            {
+                Console.WriteLine("Не возможно преобразовать дату");
+                return;
+            }
+            FileDate = fileDate;
 
-            //FileMask = args[1];
-
-            FileMask = "D:\\Projects\\CB\\Alternative\\Example\\IZVTUB";
-            FileDate = DateTime.Parse("26.09.2017");
-
+            KwitFilePath = args[1];
+            
             ConnectToDataBase();
+
+            if (fileMasks.Count == 0)
+            {
+                Console.WriteLine("В конфигурационном файле не указаны маски файлов.");
+                Console.ReadLine();
+                return;
+            }
+            
             FillXmlData();
-            //LoadXmlFile();
             Console.ReadLine();
         }
 
         #region DO CONNECT
 
-        //Получаем строку соединения из конфигурационного файла
-        private static void GetConnectionString()
+        /// <summary>
+        /// Получение ConnectionString и маски файлов квитовок
+        /// </summary>
+        private static void ReadApplicationSettings()
         {
-            ConnectionStringSettings CBUtils = ConfigurationManager.ConnectionStrings["CBUtils"];
-            if (CBUtils != null)
+            fileMasks = new List<string>();
+            //Получаем строку соединения из конфигурационного файла
+            try
             {
-                DbConnectionString = CBUtils.ConnectionString;
+                ConnectionStringSettings CBUtils = ConfigurationManager.ConnectionStrings["CBUtils"];
+                if (CBUtils != null)
+                {
+                    DbConnectionString = CBUtils.ConnectionString;
+                }
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return;
             }
+            try
+            {
+                var appSettings = ConfigurationManager.AppSettings;
+                if (appSettings.Count == 0)
+                {
+                    Console.WriteLine("Не указаны маски файлов.");
+                }
+                else
+                {
+                    foreach (var key in appSettings.AllKeys)
+                    {
+                        fileMasks.Add(appSettings[key]);
+                        Console.WriteLine("Key: {0} Value: {1}", key, appSettings[key]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
         }
         //Соединение с БД
         private static bool ConnectToDataBase()
         {
-            GetConnectionString();
+            ReadApplicationSettings();
             DbSqlConnection = new SqlConnection(DbConnectionString);
             try
             {
@@ -227,13 +271,18 @@ namespace KwitParser
         /// <returns>True -  если в список заполнен файлами; False - если список пустой</returns>
         static bool PrepareKwitList()
         {
-            string filePath;
-            string fileMask;
-            filePath = Path.GetFullPath(FileMask);
-            fileMask = "IZVTUB*.XML";
-            filesList = Directory.GetFiles(filePath,fileMask);
+            filesList = new List<string>();
+            foreach (string fm in fileMasks)
+            {
+                string[] fl = Directory.GetFiles(KwitFilePath, fm); //fl - File list   список  найденных файлов  согласно маски fm (File Mask)
+                foreach (string f in fl)
+                {
+                    filesList.Add(f);
+                }
+
+            }
             //Тернарная операция
-            return filesList.Length > 0 ? true : false;
+            return filesList.Count > 0 ? true : false;
         }
 
         /// <summary>
