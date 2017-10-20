@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Data.SqlClient;
 
+/// <summary>
+///Занесение элементов XML  в таблицу 
+/// </summary>
 namespace KwitParser
 {
     class Program
@@ -60,7 +63,7 @@ namespace KwitParser
             }
             
             FillXmlData();
-            Console.ReadLine();
+            //Console.ReadLine();
         }
 
         #region DO CONNECT
@@ -96,7 +99,7 @@ namespace KwitParser
                     foreach (var key in appSettings.AllKeys)
                     {
                         fileMasks.Add(appSettings[key]);
-                        Console.WriteLine("Key: {0} Value: {1}", key, appSettings[key]);
+                        //Console.WriteLine("Key: {0} Value: {1}", key, appSettings[key]);
                     }
                 }
             }
@@ -157,7 +160,7 @@ namespace KwitParser
                         if (childNode.NodeType == XmlNodeType.Text)
                         {
                             elemValue.Value += childNode.Value;
-                            Console.WriteLine("Node Name {0}; Node value - {1}", docNode.Name, childNode.Value);
+                            //Console.WriteLine("Node Name {0}; Node value - {1}", docNode.Name, childNode.Value);
                         }
                     }
                 }
@@ -179,8 +182,8 @@ namespace KwitParser
                 {
                     number = sqlcmd.ExecuteNonQuery();
                     newRecordId = (int)newId.Value;
-                    Console.WriteLine("Parent Id in the table - {0}", newRecordId);
-                    Console.WriteLine(number);
+                    //Console.WriteLine("Parent Id in the table - {0}", newRecordId);
+                    //Console.WriteLine(number);
                 }                
             }
             catch (Exception e)
@@ -188,8 +191,8 @@ namespace KwitParser
                 Console.WriteLine(e.Message);
             }
 
-            Console.WriteLine("Node type - {0}", docNode.NodeType.ToString());
-            Console.WriteLine("Node name - {0}", docNode.Name);
+            //Console.WriteLine("Node type - {0}", docNode.NodeType.ToString());
+            //Console.WriteLine("Node name - {0}", docNode.Name);
 
             if (docNode.NodeType != XmlNodeType.Text && docNode.Attributes.Count >0)
             {
@@ -226,23 +229,12 @@ namespace KwitParser
                     {
                         Console.WriteLine(e.Message);
                     }
-                    Console.WriteLine("Root node attribute name - {0}; Root node attribut value - {1}", attr.Name, attr.Value);
+                    //Console.WriteLine("Root node attribute name - {0}; Root node attribut value - {1}", attr.Name, attr.Value);
                 }
             }
             return newRecordId;
         }
         
-        /// <summary>
-        /// Загрузка XML файла
-        /// </summary>
-        static void LoadXmlFile()
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.Load(FILE_NAME);
-            XmlNode docNode = doc.DocumentElement;
-            XmlPassing(-1, docNode, 31306);
-        }
-
         /// <summary>
         /// Проход по струтуре XML файла
         /// </summary>
@@ -286,7 +278,7 @@ namespace KwitParser
         }
 
         /// <summary>
-        /// 
+        /// Заполняем словарь 
         /// </summary>
         /// <returns></returns>
         static int GetFileIdByName()

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using NLog;
 using System.Data.SqlClient;
 using System.Data;
 using System.IO;
@@ -32,14 +30,18 @@ namespace CheckUniqueness
         private static string InputFileList;                // Параметр путь к файлу со списком 
         private static string OutputFileList;               // Параметр путь к файлу со списком дублей
 
+        private static Logger logger; 
+
         static int Main(string[] args)
 		{
-
-			bool hasArgs = (args.Length == 3);
+            logger = LogManager.GetCurrentClassLogger();
+            logger.Trace("Проверяем наличие параметров для запуска");
+            bool hasArgs = (args.Length == 3);
 			if (!hasArgs)
 			{
 				Console.WriteLine("Не досаточно аргументов для запуска программы");
-				Console.WriteLine("Первый параметр - Дата файла");
+                logger.Error("Не досаточно аргументов для запуска программы");
+                Console.WriteLine("Первый параметр - Дата файла");
 				Console.WriteLine("Второй параметр - Имя файла со списком (полный путь к файлу) или -single или -repeat");
 				Console.WriteLine("Третий параметр - Имя файла со списком дублей (полный путь) если второй параметр -single или -repeat, то имя файла для проверки");
 				Console.ReadLine();
@@ -49,12 +51,16 @@ namespace CheckUniqueness
 			if (!DateTime.TryParseExact(args[0], DATE_PATERN, null,System.Globalization.DateTimeStyles.None, out FileDate))
 			{
 				Console.WriteLine("Не возможно преобразовать дату");
-				return -3;
+                logger.Error("Не возможно преобразовать дату");
+                return -3;
 			}
-			InputFileList = args[1];
+            logger.Info("Дата, за которую обрабатывается файл {0}", FileDate.ToString());
+            InputFileList = args[1];
+            logger.Info("Путь к файлу со списком {0}",InputFileList);
 			OutputFileList = args[2];
+            logger.Info("Путь к файлу со списком дублей {0}", OutputFileList);
 
-			if (!ConnectToDataBase())
+            if (!ConnectToDataBase())
 			{
 				return -2;
 			}
@@ -86,11 +92,20 @@ namespace CheckUniqueness
 
 		private static void GetConnectionString()
 		{
-			ConnectionStringSettings CBUtils = ConfigurationManager.ConnectionStrings["CBUtils"];
-			if (CBUtils != null)
-			{
-				CBUtilsConnectionString = CBUtils.ConnectionString;
-			}
+            try
+            {
+                ConnectionStringSettings CBUtils = ConfigurationManager.ConnectionStrings["CBUtils"];
+                if (CBUtils != null)
+                {
+                    CBUtilsConnectionString = CBUtils.ConnectionString;
+                    logger.Info("Получили ConnectionString  из конфигурационного файла");
+                }
+            }
+            catch (Exception e)
+            {
+                logger.Error("При получении ConnectionString из конфигурационного файла произошла ошибка: {0}",e.Message);
+            }
+            
 		}
 
 		private static bool ConnectToDataBase()
@@ -99,12 +114,13 @@ namespace CheckUniqueness
 			sqlConnection = new SqlConnection(CBUtilsConnectionString);
 			try
 			{
-				sqlConnection.Open();
-				//Console.WriteLine("Sql connection open!");
-			}
+                sqlConnection.Open();
+                logger.Info("Соединение с БД установленно.");
+            }
 			catch (Exception e)
 			{
-				Console.WriteLine("{0} Exception caught.", e);
+                logger.Error("При установке соединеения с БД произошла ошибка: {0}", e.Message);
+                Console.WriteLine("{0} Exception caught.", e);
 				return false;
 			}
 			return (sqlConnection.State == ConnectionState.Open) ? true : false;
@@ -121,25 +137,28 @@ namespace CheckUniqueness
         /// <param name="pathToFilesListStore"></param>
         private static void ReadFileList(string pathToFilesListStore)
 		{
-			allFilesList = new List<string>();
+            logger.Info("Считываем данные из файла в List");
+            allFilesList = new List<string>();
 			try
 			{
                 ///Читаем имена файлов из списка и сохраняем их в List (allFilesList)
                 using (StreamReader sr = new StreamReader(pathToFilesListStore, System.Text.Encoding.Default))
 				{
 					string fileName;
-					while ((fileName = sr.ReadLine()) != null)
+                    while ((fileName = sr.ReadLine()) != null)
 					{
 						if (!String.IsNullOrEmpty(fileName))
 						{
-							allFilesList.Add(fileName);
-						}
+                            allFilesList.Add(fileName);
+                            logger.Info("Имя файла, который добавлен в List - {0}", fileName);
+                        }
 					}
 				}
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine(e.Message);
+                logger.Error("Во время заполнения List файлами из списка произошла ошибка - {0}", e.Message);
+                Console.WriteLine(e.Message);
 			}
 		}
         
@@ -159,7 +178,7 @@ namespace CheckUniqueness
 			string separateList = String.Join("','", allFilesList);
 			string sqlSelect    = SQL_COUNT_FILE.Replace("{0}", separateList);
 			sqlSelect           = sqlSelect.Replace("{1}", dt.ToString(DATE_PATERN));
-			return sqlSelect;
+            return sqlSelect;
 		}
 
         /// <summary>
@@ -168,7 +187,8 @@ namespace CheckUniqueness
 		private static void GenerateNonUniqueList()
 		{
 			string queryText = PrepareCheckSql(FileDate);
-			try
+            logger.Info("Запрос для проверки на дублирование файла - {0}", queryText);
+            try
 			{
 				SqlCommand sqlcmd = new SqlCommand(queryText, sqlConnection);
 				SqlDataReader reader = sqlcmd.ExecuteReader();
@@ -179,12 +199,14 @@ namespace CheckUniqueness
 					{
 						string fileName = (string)reader["NAME"];
 						nonUniqueFiles.Add(fileName);
-					}//end while
+                        logger.Info("Файлы дубли, которые добавлены в List(nonUniqueFiles) - {0}", fileName);
+                    }//end while
 				}
 			}
 			catch(Exception e)
 			{
-				Console.WriteLine(e.Message);
+                logger.Error("Во время выполнения запроса на поиск дублей произошла ошибка- {0}", e.Message);
+                Console.WriteLine(e.Message);
 			}
 		}
        
@@ -195,6 +217,7 @@ namespace CheckUniqueness
         private static void PrepareUniqueList()
         {
             allFilesList.RemoveAll(fn => nonUniqueFiles.Exists(nfn => fn == nfn)); //remove  double names from list 
+            logger.Info("Создание списка с уникальными именами List");
         }
 
         /// <summary>
@@ -249,7 +272,8 @@ namespace CheckUniqueness
 
                 selectVersionSql = SQL_GET_FILE_VERSION.Replace("{0}",fn);
                 selectVersionSql = selectVersionSql.Replace("{1}", FileDate.ToString(DATE_PATERN));
-                ///Получаем версию дубля в переменную fileVersion
+                //Получаем версию дубля в переменную fileVersion
+                logger.Info("Запрос на получение версии дубля - {0}", selectVersionSql);
                 try
                 {
                     SqlCommand sqlcmd = new SqlCommand(selectVersionSql, sqlConnection);
@@ -259,11 +283,13 @@ namespace CheckUniqueness
                         while (reader.Read())
                         {
                             fileVersion = (int)reader["VERSION"];
+                            logger.Info("Версия дубля - {0}", fileVersion);
                         }//end while
                     }
                 }
                 catch (Exception e)
                 {
+                    logger.Error("При получении версии дубля - {0}", e.Message);
                     Console.WriteLine(e.Message);
                 }
                 ///Готовим данные для Insert VALUES_FOR_INSERT_DOUBLE = "('{0}','{1}','{2}', {3})";
@@ -352,12 +378,15 @@ namespace CheckUniqueness
                 {
                     SqlCommand sqlcmd = new SqlCommand(insert, sqlConnection);
                     ri = ri + sqlcmd.ExecuteNonQuery();
+                    logger.Info("Скрипт добавления дубликатов - {0}", insert);
                 }
                 catch (Exception e)
                 {
+                    logger.Error("Во время выполнения запроса по добавлению дублей {0} произошла ошибка - {1}", insert, e.Message);
                     Console.WriteLine(e.Message);
                 }
             }
+            logger.Info("Добавлено {0} дубликатов ", ri);
             return ri;
         }
 
@@ -388,9 +417,11 @@ namespace CheckUniqueness
                 {
                     SqlCommand sqlcmd = new SqlCommand(insert, sqlConnection);
                     ri = ri + sqlcmd.ExecuteNonQuery();
+                    logger.Info("Скрипт добавления новых записей - {0}", insert);
                 }
                 catch (Exception e)
                 {
+                    logger.Error("Во время выполнения запроса по добавлению дублей {0} произошла ошибка - {1}", insert, e.Message);
                     Console.WriteLine(e.Message);
                 }
             }
@@ -414,12 +445,14 @@ namespace CheckUniqueness
 				{
 					foreach (string fn in nonUniqueFiles)
 					{
-						sw.WriteLine(fn);
+                        logger.Info("В файл со списком дубликатов добавлен - {0}", fn);
+                        sw.WriteLine(fn);
 					}
 				}
 			}
 			catch (Exception e)
 			{
+                logger.Error("Во время создания файла со списком дублей произошла ошибка - {0}", e.Message);
                 Console.WriteLine(e.Message);
 			}
 			return nonUniqueFiles.Count;
