@@ -20,6 +20,7 @@ namespace KwitParser
         private static string KwitFilePath { get; set; } //Путь к файлам квитовок. На пример:  c:\files.arh\2017\2017.09\2017.09.26\
         private static DateTime FileDate { get; set; }   //Дата а которую данный файл обрабаывается
 
+        private static int totalRec = 0;
         private static List<string> filesList;              //Список файлов согласно списка масок fileMasks
         private static Dictionary<int,string> filesId;
         private static List<string> fileMasks;              //Список масок файлов, которые хранятся в конфигурационном файле
@@ -63,6 +64,10 @@ namespace KwitParser
             }
             
             FillXmlData();
+            Console.WriteLine("Работает утилита KwitParser");
+            Console.WriteLine("Файлов по маске {0} - {1}", String.Join(", ", fileMasks.ToArray()), filesList.Count);
+            Console.WriteLine("Новых файлов - {0}", filesId.Count);
+            Console.WriteLine("Добавлено записей в таблицу TXML_DATA - {0}", totalRec);
             //Console.ReadLine();
         }
 
@@ -182,6 +187,7 @@ namespace KwitParser
                 {
                     number = sqlcmd.ExecuteNonQuery();
                     newRecordId = (int)newId.Value;
+                    totalRec++;
                     //Console.WriteLine("Parent Id in the table - {0}", newRecordId);
                     //Console.WriteLine(number);
                 }                
@@ -224,6 +230,7 @@ namespace KwitParser
                     try
                     {
                         sqlcmd.ExecuteNonQuery();
+                        totalRec++;
                     }
                     catch(Exception e)
                     {
@@ -285,7 +292,7 @@ namespace KwitParser
         {
             filesId     = new Dictionary<int, string>();
             notInTFiles = new List<string>();
-            //Подготовка списка ID  файлов из TFiles
+            //Подготовка списка ID  файлов из TFiles(TFiles - имя таблицы) выбираем файлы по имени, которые есть в этой таблицы, что бы получить ID
             foreach (string fn in filesList)
             {
                 string fileName = Path.GetFileName(fn);

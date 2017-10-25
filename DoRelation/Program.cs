@@ -206,6 +206,9 @@ namespace DoRelation
 
         private static void AddRelation()
         {
+            int totalRelationsInList = 0; //Общее количество связей св файлах *.List
+            int recordsAded = 0; //Количество успешно добавленных новых связей
+            int err = 0; // Количество ошибок  при добавлении связи
             foreach (int key in FileRelationsDict.Keys)
             {
                 List<int> a = new List<int>();
@@ -231,19 +234,34 @@ namespace DoRelation
                             ParameterName = "@type",
                             Value = "arj"
                         };
+                        SqlParameter returnParameter = new SqlParameter("@returnVal",SqlDbType.Int);
+                        returnParameter.Direction = ParameterDirection.ReturnValue;
+
                         sqlcmd.Parameters.Add(prmIdFile);
                         sqlcmd.Parameters.Add(prmIdParentFile);
                         sqlcmd.Parameters.Add(prmType);
+                        sqlcmd.Parameters.Add(returnParameter);
 
-                        sqlcmd.ExecuteScalar();
-                        Console.WriteLine("ParentId = {0}, ChildId = {1} Type = {2} ",key,i,"arj");
+                        sqlcmd.ExecuteNonQuery();
+
+                        int recAdded =Convert.ToInt32(returnParameter.Value);
+                        //Console.WriteLine("rec added - {0}", recAdded);
+                        recordsAded += recAdded;
+                        totalRelationsInList++;
+                        //Console.WriteLine("ParentId = {0}, ChildId = {1} Type = {2} ",key,i,"arj");
                     }
                     catch(Exception e)
                     {
                         Console.WriteLine(e.Message);
+                        err++;
                     }
                 }
             }
+            Console.WriteLine("Всего файлов *.list");
+            Console.WriteLine("в директории {0} - {1}", SourcePath, FileRelationsDict.Count);
+            Console.WriteLine("Количество записей в файлах *.list - {0}", totalRelationsInList);
+            Console.WriteLine("Связей добавлено - {0}", recordsAded);
+            Console.WriteLine("Произошло ошибок во время добавления - {0}", err);
         }
 
         public override string ToString()

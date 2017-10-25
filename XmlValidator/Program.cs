@@ -47,10 +47,11 @@ namespace XmlValidator
                 Console.WriteLine("Прверку не прошли - {0} файлов", badFiles.Count);
                 Console.WriteLine(errLog);
             }
-            
+            if (badFiles.Count > 0) return 1;
+            else return 0;
 
-            Console.ReadLine();
-            return 0;
+            //Console.ReadLine();
+            //return 0;
         }
 
         static void ReadConfiguration()
