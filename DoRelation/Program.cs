@@ -1,43 +1,58 @@
 ﻿using System;
 using System.Data;
 using System.Configuration;
-using DoRelation.Common;
 using System.Data.SqlClient;
 using System.Collections.Generic;
 using System.IO;
 using System.Globalization;
+using NLog;
 
 namespace DoRelation
 {
     class Program
     {
+        const string ERR_NOT_ENOUGH_PARAMS = "Не достаточно параметров для запуска";
+        const string ERR_CAN_NOT_CONVERT_DATA = "Не возможно преобразовать дату";
+        const string FILE_MASK = "*.list";
+
         const string SELECT_FILE_ID = "select top(1) ID from TFILES  where NAME ='{0}' and DATE = '{1}' and TIME <= '{2}'";
         const string TIME_PATERN = "HHmmss";
         const string DATE_PATERN = "yyyyMMdd";
         const string SP_ADDRELATION = "[dbo].[SP_ADDRELATION]";
 
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         static string SourcePath;
         static DateTime FileDate;
         static string DbConnectionString;
         static SqlConnection DbSqlConnection;
+        static int totalListFilesCounter;
+        static int totalRelationsCounter;
+        static int totalRecordsAdded;
+        static int totalErrors;
+
         public static List<string> ArjFilesList;
         public static Dictionary<string,List<string>> InitFileList; //Первоначальный список, состоящий из имени архива и его содержимого
         public static Dictionary<string, int> ArjWithIdList;
         public static Dictionary<int, List<int>> FileRelationsDict;
 
+
         static void Main(string[] args)
         {
+            Console.WriteLine("Работает программа DoRelations");
+            //logger.Info("Запуск программы DoRelations");
             bool hasArgs = (args.Length == 2);
             if (!hasArgs)
             {
-                Console.WriteLine("Not enought parameters");
+                Console.WriteLine(ERR_NOT_ENOUGH_PARAMS);
+                logger.Error(ERR_NOT_ENOUGH_PARAMS);
                 Console.ReadLine();
                 return;
             }
             //Получаем аргументы
+
             if (!DateTime.TryParseExact(args[0], DATE_PATERN, null, System.Globalization.DateTimeStyles.None, out FileDate))
             {
-                Console.WriteLine("Не возможно преобразовать дату");
+                Console.WriteLine(ERR_CAN_NOT_CONVERT_DATA);
                 return;
             }
             SourcePath = args[1];
@@ -45,7 +60,11 @@ namespace DoRelation
             //Создаем все Lists and Dictionaries
             InitList();
             FillArjDictWithId();
-            AddRelation();
+            Console.WriteLine("Всего файлов *.list");
+            Console.WriteLine("в директории {0} - {1}", SourcePath, totalListFilesCounter);
+            Console.WriteLine("Количество записей в файлах *.list - {0}", totalRelationsCounter);
+            Console.WriteLine("Связей добавлено - {0}", totalRecordsAdded);
+            Console.WriteLine("Произошло ошибок во время добавления - {0}", totalErrors);
 
             //Console.ReadLine();
         }
@@ -57,7 +76,10 @@ namespace DoRelation
             InitFileList = new Dictionary<string, List<string>>();
             ArjWithIdList = new Dictionary<string, int>();
             FileRelationsDict = new Dictionary<int, List<int>>();
-    }
+            totalListFilesCounter = 0;
+            totalRelationsCounter = 0;
+            totalRecordsAdded = 0;
+        }
 
         #region DO CONNECT
 
@@ -135,7 +157,7 @@ namespace DoRelation
         {
             string sqlGetParentId;
             int parentFileId = 0;
-            string[] files = Directory.GetFiles(SourcePath, "*.list");
+            string[] files = Directory.GetFiles(SourcePath, FILE_MASK);
             foreach (string file in files)
             {
                 var childFilesIdList = new List<int>();
@@ -197,10 +219,20 @@ namespace DoRelation
                     }
                     if (parentFileId > 0 && childFilesIdList.Count > 0)
                     {
-                        FileRelationsDict.Add(parentFileId, childFilesIdList);
+                        try
+                        {
+                            FileRelationsDict.Add(parentFileId, childFilesIdList);
+                        }
+                        catch(Exception e)
+                        {
+                            logger.Error(e.Message);
+                        }
+                        
                     }
-                    
+                    AddRelation();
+                    FileRelationsDict.Clear();
                 }
+                totalListFilesCounter++;
             }
         }
 
@@ -257,11 +289,9 @@ namespace DoRelation
                     }
                 }
             }
-            Console.WriteLine("Всего файлов *.list");
-            Console.WriteLine("в директории {0} - {1}", SourcePath, FileRelationsDict.Count);
-            Console.WriteLine("Количество записей в файлах *.list - {0}", totalRelationsInList);
-            Console.WriteLine("Связей добавлено - {0}", recordsAded);
-            Console.WriteLine("Произошло ошибок во время добавления - {0}", err);
+            totalRelationsCounter += totalRelationsInList;
+            totalRecordsAdded += recordsAded;
+            totalErrors += err;
         }
 
         public override string ToString()

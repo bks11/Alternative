@@ -47,12 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\Const.cs" />
-    <Compile Include="Common\DBHelper.cs" />
-    <Compile Include="Common\FileProcessor.cs" />
-    <Compile Include="Common\LogFormatter.cs" />
-    <Compile Include="Common\Logger.cs" />
-    <Compile Include="Common\LogLevel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

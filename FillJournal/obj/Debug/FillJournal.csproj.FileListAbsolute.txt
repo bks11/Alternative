@@ -4,3 +4,4 @@ D:\Projects\CB\Alternative\Alternative\FillJournal\bin\Debug\FillJournal.pdb
 D:\Projects\CB\Alternative\Alternative\FillJournal\obj\Debug\FillJournal.csproj.CoreCompileInputs.cache
 D:\Projects\CB\Alternative\Alternative\FillJournal\obj\Debug\FillJournal.exe
 D:\Projects\CB\Alternative\Alternative\FillJournal\obj\Debug\FillJournal.pdb
+D:\Projects\CB\Alternative\Alternative\FillJournal\obj\Debug\FillJournal.csprojResolveAssemblyReference.cache
