@@ -5,12 +5,14 @@ using NLog;
 using System.Data.SqlClient;
 using System.Data;
 using System.IO;
+using utilites;
 
 namespace CheckUniqueness
 {
 	class Program
 	{
-		private const string SQL_COUNT_FILE = "SELECT DISTINCT NAME FROM TFILES WHERE (NAME in ('{0}')) AND DATE = '{1}'";
+        private const string APP_KEY_CONFIF_FILE_NAME = "ConnectionStringFile";
+        private const string SQL_COUNT_FILE = "SELECT DISTINCT NAME FROM TFILES WHERE (NAME in ('{0}')) AND DATE = '{1}'";
         private const string SQL_GET_FILE_VERSION = "SELECT COUNT(F.NAME) AS VERSION FROM TFILES F WHERE F.NAME = '{0}' AND F.DATE = '{1}'";
 		private const string VALUES_FOR_INSERT_NEW = "('{0}','{1}','{2}')";
 		private const string VALUES_FOR_INSERT_DOUBLE = "('{0}','{1}','{2}', {3})";
@@ -22,6 +24,7 @@ namespace CheckUniqueness
 
         private static List<string> Inserts;                // Хранилище скриптов для Insert, 
                                                             // разделенная по SQL_INSERT_DOUBLE_VALUES записей
+
         private static string CBUtilsConnectionString;      // ConnectionString для подключения к BD, хранится в конфиг. файле 
 		private static SqlConnection sqlConnection;         // Подключение к БД
 		private static List<string> allFilesList;           // Хранилище списка файлов оригинал
@@ -92,21 +95,22 @@ namespace CheckUniqueness
 
 		private static void GetConnectionString()
 		{
+            string pathConfigFile="";
             try
             {
-                ConnectionStringSettings CBUtils = ConfigurationManager.ConnectionStrings["CBUtils"];
-                if (CBUtils != null)
-                {
-                    CBUtilsConnectionString = CBUtils.ConnectionString;
-                    logger.Info("Получили ConnectionString  из конфигурационного файла");
-                }
+                var appSettings = ConfigurationManager.AppSettings;
+                pathConfigFile = appSettings[APP_KEY_CONFIF_FILE_NAME];
             }
             catch (Exception e)
             {
-                logger.Error("При получении ConnectionString из конфигурационного файла произошла ошибка: {0}",e.Message);
+                Console.WriteLine(e.Message);
             }
-            
-		}
+            if (!String.IsNullOrEmpty(pathConfigFile))
+            {
+                ConnectConfig cs = new ConnectConfig("fsmonitor", pathConfigFile);
+                CBUtilsConnectionString = cs.ConnectionParametrs;
+            }
+        }
 
 		private static bool ConnectToDataBase()
 		{

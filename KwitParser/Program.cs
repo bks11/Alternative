@@ -22,7 +22,7 @@ namespace KwitParser
 
         private static int totalRec = 0;
         private static List<string> filesList;              //Список файлов согласно списка масок fileMasks
-        private static Dictionary<int,string> filesId;
+        private static Dictionary<int,string> filesId;      //Список ID файлов и имени из таблицы TFiles
         private static List<string> fileMasks;              //Список масок файлов, которые хранятся в конфигурационном файле
         private static List<string> notInTFiles;
         private static SqlConnection DbSqlConnection;

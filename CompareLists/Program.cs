@@ -46,7 +46,7 @@ namespace CompareLists
 				string fileNameLine;
 				while ((fileNameLine = sr.ReadLine()) != null)
 				{
-					listOne.Add(fileNameLine);
+					listOne.Add(fileNameLine.Trim());
 				}
 			}
 			return listOne.Count;
@@ -60,7 +60,7 @@ namespace CompareLists
 				string fileNameLine;
 				while ((fileNameLine = sr.ReadLine()) != null)
 				{
-					listTwo.Add(fileNameLine);
+					listTwo.Add(fileNameLine.Trim());
 				}
 			}
 			return listTwo.Count;
@@ -71,7 +71,8 @@ namespace CompareLists
 			listDif = new List<string>();
 			foreach (string fn in listOne)
 			{
-				if (!listTwo.Exists(dfn => dfn == fn)) listDif.Add(fn);
+				if (!listTwo.Exists(dfn => dfn == fn))
+                    listDif.Add(fn);
 			}
 			return listDif.Count;
 		}

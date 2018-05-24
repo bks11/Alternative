@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>D:\Projects\CB\Alternative\440_1\ D:\Projects\CB\Alternative\440GOOD\ D:\Projects\CB\Alternative\440NOT\</StartArguments>
+    <StartArguments>"d:\temp\p1" "%2a.jpg#%2a.jpg/%2a.jpg" "20180522" JPG 0</StartArguments>
   </PropertyGroup>
 </Project>

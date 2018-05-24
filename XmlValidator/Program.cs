@@ -1,12 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Xml;
 using System.Configuration;
 using System.Xml.Schema;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Globalization;
 
 namespace XmlValidator
@@ -28,6 +24,7 @@ namespace XmlValidator
 
         static int Main(string[] args)
         {
+            Console.WriteLine("Запуск программы XmlValidator");
             bool hasArgs = (args.Length == 3);
             if (!hasArgs)
             {
@@ -103,6 +100,16 @@ namespace XmlValidator
             
         }
 
+        static private string WriteValidationErrToFile(string fileName, string errorDescription)
+        {
+            string errDescFileName = fileName + ".err";
+            using (StreamWriter swErrDescFileName = new StreamWriter(errDescFileName, false, System.Text.Encoding.Default))
+            {
+                swErrDescFileName.WriteLine(errorDescription);
+            }
+            return errDescFileName;
+        }
+
         static private void ValidateFiles(string folderPath)
         {
             //Get file mask stored in Dictionary
@@ -113,7 +120,8 @@ namespace XmlValidator
                 //For each file in list  do validation   
                 foreach (string file in files)
                 {
-                    bool isFileNameGood = CheckSendDateFromFileName(Path.GetFileName(file));
+                    //bool isFileNameGood = CheckSendDateFromFileName(Path.GetFileName(file));
+                    bool isFileNameGood = true;
 
                     XmlSchemaSet schemaSet = new XmlSchemaSet();
                     schemaSet.Add(null, SchemaBinding[mask]);
@@ -123,6 +131,8 @@ namespace XmlValidator
                     if (!xsv.IsValidXml || !isFileNameGood)
                     {
                         string errDesc = isFileNameGood? xsv.ValidationError: xsv.ValidationError + ' ' + ERR_FILE_NAME;
+                        string fileWithErrDesc = WriteValidationErrToFile(file, errDesc);
+                        badFiles.Add(fileWithErrDesc, errDesc);
                         badFiles.Add(file, errDesc);
                         //Console.WriteLine("File name with err - {0}", Path.GetFileName(file));
                     }

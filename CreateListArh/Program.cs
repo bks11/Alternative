@@ -41,7 +41,8 @@ namespace CreateListArh
             try
             {
                 if (args.Length < 2) return false;
-                string arhType = Path.GetExtension(args[0]);
+                //string arhType = Path.GetExtension(args[0]);
+                string arhType = "Arj";
                 if (!Enum.IsDefined(typeof(KnownSevenZipFormat), arhType)) return false;
                 archiveName = args[0];
                 pathToFileList = args[1];

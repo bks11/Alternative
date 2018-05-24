@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>20171005 D:\Projects\CB\Alternative\Example\AFN_MIFNS00_3510123_20171004_00017.ARJ.154043.list D:\Projects\CB\Alternative\Example\d.files</StartArguments>
+    <StartArguments>20171005 D:\Projects\CB\Alternative\Example\AFN_3510123_MIFNS00_20171010_00002.arj.list D:\Projects\CB\Alternative\Example\d.files</StartArguments>
   </PropertyGroup>
 </Project>

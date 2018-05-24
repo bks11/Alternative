@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 
 namespace PSDNotifier
 {
@@ -30,7 +31,7 @@ namespace PSDNotifier
 
 		static int Main(string[] args)
 		{
-			bool hasArgs = (args.Length > 0);
+            bool hasArgs = (args.Length > 0);
 			if (!hasArgs)
 			{
 				Console.WriteLine("Не указаны параметры запуска");
@@ -43,7 +44,8 @@ namespace PSDNotifier
 			{
 				ParseArguments(args);
 			}
-			string sql = PrepareSqlScript();
+            //Console.WriteLine("Выполняется утилита PSDNotifier");
+            string sql = PrepareSqlScript();
 			
 			Console.WriteLine(ShowResult());
 
@@ -66,6 +68,16 @@ namespace PSDNotifier
 			}
 		}
 
+        private static bool checkEmail(string email_address)
+        {
+            Regex emailrule = new Regex(@"^([a-z0-9_-]+\.)*[a-z0-9_-]+@[a-z0-9_-]+(\.[a-z0-9_-]+)*\.[a-z]{2,6}$");
+            MatchCollection matches = emailrule.Matches(email_address);
+            if (matches.Count > 0)
+                return true;
+            else
+                return false;
+        }
+
 		private static string ShowResult()
 		{
 			string resultString = "";
@@ -75,13 +87,20 @@ namespace PSDNotifier
 				{
 					if (i == resultStore.Count - 1)
 					{
-						resultString = resultString + resultStore[i];
-						resultString.Replace(" ","");
+                        if (checkEmail(resultStore[i]))
+                        {
+                            resultString = resultString + resultStore[i];
+                            resultString.Replace(" ", "");
+                        }
+                        
 					}
 					else
 					{
-						resultString = resultString + resultStore[i] + "#";
-						resultString.Replace(" ", "");
+                        if (checkEmail(resultStore[i]))
+                        {
+                            resultString = resultString + resultStore[i] + "#";
+                            resultString.Replace(" ", "");
+                        }     
 					}
 				}
 			}
